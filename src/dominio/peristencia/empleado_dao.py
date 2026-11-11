@@ -1,5 +1,6 @@
 # persistencia/empleado_dao.py
 from persistencia.conexion import abrir_conexion, obtener_motor
+from dominio.empleado import Empleado    #ajusta ruta
 
 class EmpleadoDAO:
     @staticmethod
@@ -17,3 +18,24 @@ class EmpleadoDAO:
         conexion.commit()
         conexion.close()
         return empleado
+    
+    @staticmethod
+    def listar():
+        conexion = abrir_conexion()
+        cursor = conexion.cursor()
+
+        sql = (
+            "Select id, nombre, correo"
+            "FROM empleado ORDER BY id"
+        )
+        cursor.execute(sql)
+        filas = cursor.fetchall()
+
+        empleados = []
+        for id_empleados, nombre , correo in filas:
+            empleado = Empleado(
+                nombre=nombre, correo=correo, id=id_empleado
+            )
+            empleados.append(empleado)
+            conexion.close()
+            return empleados
