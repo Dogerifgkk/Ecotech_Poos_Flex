@@ -34,7 +34,7 @@ class EmpleadoDAO:
         empleados = []
         for id_empleados, nombre , correo in filas:
             empleado = Empleado(
-                nombre=nombre, correo=correo, id=id_empleado
+                nombre=nombre, correo=correo, id=id_empleados
             )
             empleados.append(empleado)
             conexion.close()

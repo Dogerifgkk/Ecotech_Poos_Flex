@@ -1,12 +1,10 @@
-from src.empleado import Empleado
+from empleado import Empleado
 from persistencia.empleado_dao import EmpleadoDAO
-from dominio.departamento import Departamento
-from persistencia_crear_hd import crear_tablas
+from persistencia.crear_bd import crear_tablas
+
 crear_tablas()
 
-emp = Empleado("correo@gmail.cl","juanito")
-print(emp.mostrar_datos())
+emp = Empleado(nombre="juanito", correo="correo@gmail.cl")
+print(emp.obtener_datos())
 EmpleadoDAO.insertar(emp)
-print(emp.mostrar_datos())
-
-
+print(emp.obtener_datos())   # ahora debe mostrar el id asignado
