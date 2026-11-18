@@ -1,6 +1,6 @@
 # persistencia/empleado_dao.py
 from persistencia.conexion import abrir_conexion, obtener_motor
-from dominio.empleado import Empleado    #ajusta ruta
+from empleado import Empleado    #ajusta ruta
 
 class EmpleadoDAO:
     @staticmethod

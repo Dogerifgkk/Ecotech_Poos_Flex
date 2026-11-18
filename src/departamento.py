@@ -8,37 +8,32 @@ class Departamento:
 
     def __init__(self, nombre, descripcion="", id=None):
         self.id = id
-        self.nombre = nombre            # pasa por el setter (valida)
+        self.nombre = nombre
         self.descripcion = descripcion
-        self.empleados = []             # agregación: 0..* empleados
-        self.gerente = None             # relación "dirige": 0..1 gerente
+        self._empleados = []            # lista interna (privada)
+        self.gerente = None
 
     @property
-    def nombre(self):
-        return self._nombre
-
-    @nombre.setter
-    def nombre(self, valor):
-        valor = " ".join(valor.split()).title()   # normaliza
-        if not (self.MIN_NOMBRE <= len(valor) <= self.MAX_NOMBRE):
-            raise ValueError(
-                f"El nombre debe tener entre {self.MIN_NOMBRE} "
-                f"y {self.MAX_NOMBRE} caracteres"
-            )
-        self._nombre = valor
+    def empleados(self):
+        return list(self._empleados)    # copia: no se modifica desde afuera
 
     def agregar_empleado(self, empleado: Empleado):
-        if empleado not in self.empleados:
-            self.empleados.append(empleado)
+        anterior = empleado.departamento
+        if anterior is not None and anterior is not self:
+            anterior.quitar_empleado(empleado)   # un empleado, un solo departamento
+        if empleado not in self._empleados:      # evita duplicados
+            self._empleados.append(empleado)
+        empleado.departamento = self
 
     def quitar_empleado(self, empleado: Empleado):
-        if empleado in self.empleados:
-            self.empleados.remove(empleado)
+        if empleado in self._empleados:
+            self._empleados.remove(empleado)
+            empleado.departamento = None
 
     def obtener_datos(self):
         return {
             "id": self.id,
             "nombre": self.nombre,
             "descripcion": self.descripcion,
-            "total_empleados": len(self.empleados),
+            "total_empleados": len(self._empleados),
         }

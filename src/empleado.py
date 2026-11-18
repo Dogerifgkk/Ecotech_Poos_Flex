@@ -1,7 +1,6 @@
 # Class Empleado
 from datetime import date
 
-
 class Empleado:
     MIN_NOMBRE = 2
     MAX_NOMBRE = 80
@@ -17,7 +16,7 @@ class Empleado:
         self.telefono = telefono
         self.fecha_inicio_contrato = fecha_inicio_contrato or date.today()
         self.salario = salario    # pasa por el setter (valida)
-
+        self.departamento = None
     @property
     def nombre(self):
         return self._nombre
