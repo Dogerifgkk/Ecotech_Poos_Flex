@@ -13,3 +13,8 @@ print([e.nombre for e in dep.empleados])
 
 
 print(ana.departamento.nombre)
+
+try:
+    ana.departamento = "Ventas"
+except ValueError as e:
+    print(e)    # Asigna un Departamento o None.
