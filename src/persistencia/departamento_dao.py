@@ -4,15 +4,6 @@ from departamento import Departamento
 from empleado import Empleado
 
 
-def reconstruir_departamento(filas):
-    if not filas:
-        return None
-    departamento = Departamento(filas[0][1], id=filas[0][0])
-    for _, _, id_emp, nombre, correo in filas:
-        if id_emp is not None:
-            empleado = Empleado(nombre, correo, id=id_emp)
-            departamento.agregar_empleado(empleado)
-    return departamento
 
 
 class DepartamentoDAO:
@@ -45,7 +36,7 @@ class DepartamentoDAO:
         cursor = conexion.cursor()
         m = "?" if obtener_motor() == "sqlite" else "%s"
         cursor.execute(
-            f"""SELECT d.id, d.nombre, e.id, e.nombre, e.correo
+            f"""SELECT d.id, d.nombre, e.id as id_e, e.nombre as nombre_e, e.correo
                 FROM departamento d
                 LEFT JOIN empleado e ON e.departamento_id = d.id
                 WHERE d.id = {m}
@@ -54,4 +45,14 @@ class DepartamentoDAO:
         )
         filas = cursor.fetchall()
         conexion.close()
-        return reconstruir_departamento(filas)
+        return DepartamentoDAO.reconstruir_departamento(filas)
+    
+    def reconstruir_departamento(filas):
+        if not filas:
+            return None
+        departamento = Departamento(filas[0][1], id=filas[0][0])
+        for _, _, id_emp, nombre, correo in filas:
+            if id_emp is not None:
+                empleado = Empleado(nombre, correo, id=id_emp)
+                departamento.agregar_empleado(empleado)
+        return departamento
