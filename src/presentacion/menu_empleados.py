@@ -1,56 +1,133 @@
 # presentacion/menu_empleados.py
-from empleado import Empleado
-from departamento import Departamento
-from persistencia.empleado_dao import EmpleadoDAO
-from persistencia.departamento_dao import DepartamentoDAO
 from dominio.reporte import ReporteEmpleados, ReportePorDepartamento
+from empleado import Empleado
+from persistencia.conexion import ErrorIntegridad
+from presentacion.comun import confirmar, ejecutar_seguro, leer_validado, solicitar_id
+from presentacion.menu_indicadores import menu_indicadores
+from presentacion.menu_usuario import crear_cuenta
+from servicios import empleados as servicio
+from servicios.permisos import exigir_admin
 
-def solicitar_id(mensaje="ID del empleado: "):
+
+# ---------- entradas con reintento solo del campo incorrecto ----------
+def solicitar_nombre():
+    return leer_validado("Nombre", Empleado.validar_nombre)
+
+
+def solicitar_correo():
+    return leer_validado("Correo", Empleado.validar_correo)
+
+
+def mostrar_empleado(empleado):
+    departamento = empleado.departamento.nombre if empleado.departamento else "(sin departamento)"
+    print(f"{empleado.id} | {empleado.nombre} | {empleado.correo} | {departamento}")
+
+
+# ---------- CRUD de empleados (solo admin: el servicio lo exige) ----------
+def crear_empleado(usuario):
+    exigir_admin(usuario)   # primera instrucción de una acción administrativa
+    nombre = solicitar_nombre()
+    if nombre is None:
+        print("Registro cancelado.")
+        return
     while True:
-        texto = input(mensaje).strip()
+        correo = solicitar_correo()
+        if correo is None:
+            print("Registro cancelado.")
+            return
         try:
-            numero = int(texto)
-            if numero <= 0:
-                raise ValueError("El ID debe ser positivo.")
-        except ValueError:
-            print("Ingresa un entero mayor que 0.")
+            empleado = servicio.registrar_empleado(usuario, nombre, correo)
+        except ValueError as error:          # por ejemplo, correo repetido
+            print(f"{error} Prueba con otro correo.")
         else:
-            return numero
+            print(f"Empleado registrado. ID: {empleado.id}")
+            return
 
 
-def crear_empleado():
-    nombre = input("Nombre: ")
-    correo = input("Correo: ")
-    try:
-        empleado = Empleado(nombre=nombre, correo=correo)
-        EmpleadoDAO.insertar(empleado)
-        print(f"Empleado registrado con id {empleado.id}")
-    except ValueError as error:
-        print(f"Error: {error}")
-
-
-def listar_empleados():
-    empleados = EmpleadoDAO.listar()
+def listar_empleados(usuario):
+    exigir_admin(usuario)   # primera instrucción de una acción administrativa
+    empleados = servicio.listar_empleados(usuario)
     if not empleados:
         print("No hay empleados registrados.")
         return
     for e in empleados:
-        print(f"{e.id} | {e.nombre} | {e.correo}")
+        mostrar_empleado(e)
 
 
-def crear_departamento():
-    nombre = input("Nombre del departamento: ")
-    descripcion = input("Descripción: ")
+def buscar_empleado(usuario):
+    exigir_admin(usuario)   # primera instrucción de una acción administrativa
+    empleado = servicio.buscar_empleado(usuario, solicitar_id())
+    if empleado is None:
+        print("No existe un empleado con ese ID.")
+    else:
+        mostrar_empleado(empleado)
+
+
+def actualizar_empleado(usuario):
+    exigir_admin(usuario)   # primera instrucción de una acción administrativa
+    empleado = servicio.buscar_empleado(usuario, solicitar_id())
+    if empleado is None:
+        print("No existe un empleado con ese ID.")
+        return
+    mostrar_empleado(empleado)
+    nuevo_correo = solicitar_correo()
+    if nuevo_correo is None:
+        print("Actualización cancelada.")
+        return
+    if nuevo_correo == empleado.correo:
+        print("El correo es el mismo; no hay cambios.")
+        return
     try:
-        departamento = Departamento(nombre=nombre, descripcion=descripcion)
-        DepartamentoDAO.insertar(departamento)
-        print(f"Departamento registrado con id {departamento.id}")
+        filas = servicio.actualizar_correo(usuario, empleado, nuevo_correo)
     except ValueError as error:
-        print(f"Error: {error}")
+        print(f"No se actualizó: {error}")
+        return
+    if filas == 1:
+        print("Correo actualizado correctamente.")
+    else:
+        print("Vuelve a consultar el estado del empleado.")
 
 
-def seleccionar_departamento():
-    departamentos = DepartamentoDAO.listar()
+def eliminar_empleado(usuario):
+    exigir_admin(usuario)   # primera instrucción de una acción administrativa
+    empleado = servicio.buscar_empleado(usuario, solicitar_id())
+    if empleado is None:
+        print("No existe un empleado con ese ID.")
+        return
+    mostrar_empleado(empleado)
+    if not confirmar(f"¿Eliminar a {empleado.nombre}?"):
+        print("Eliminación cancelada. El registro se conserva.")
+        return
+    try:
+        filas = servicio.eliminar_empleado(usuario, empleado.id)
+    except ErrorIntegridad:
+        # Una IntegrityError al borrar NO significa "correo duplicado":
+        # aquí significa que otra tabla (por ejemplo usuario) referencia al empleado.
+        print("No se puede eliminar: el empleado tiene registros relacionados "
+              "(por ejemplo, una cuenta de usuario).")
+        return
+    if filas == 1:
+        print("Empleado eliminado.")
+    else:
+        print("Vuelve a consultar el estado del empleado.")
+
+
+# ---------- departamentos ----------
+def crear_departamento(usuario):
+    exigir_admin(usuario)   # primera instrucción de una acción administrativa
+    nombre = input("Nombre del departamento: ")
+    descripcion = input("Descripción (opcional): ")
+    try:
+        departamento = servicio.crear_departamento(usuario, nombre, descripcion)
+    except ValueError as error:
+        print(f"No se creó el departamento: {error}")
+    else:
+        print(f"Departamento registrado con id {departamento.id}")
+
+
+def seleccionar_departamento(usuario):
+    exigir_admin(usuario)   # primera instrucción de una acción administrativa
+    departamentos = servicio.listar_departamentos(usuario)
     if not departamentos:
         print("No hay departamentos registrados.")
         return None
@@ -64,27 +141,26 @@ def seleccionar_departamento():
     return None
 
 
-# Paso 6
-def asignar_departamento():
-    empleado = EmpleadoDAO.buscar_por_id(solicitar_id())
+def asignar_departamento(usuario):
+    exigir_admin(usuario)   # primera instrucción de una acción administrativa
+    empleado = servicio.buscar_empleado(usuario, solicitar_id())
     if empleado is None:
         print("No existe ese empleado.")
         return
-    departamento = seleccionar_departamento()
+    departamento = seleccionar_departamento(usuario)
     if departamento is None:
         return
-    departamento.agregar_empleado(empleado)
-    filas = EmpleadoDAO.actualizar_departamento(empleado)
+    filas = servicio.asignar_departamento(usuario, empleado, departamento)
     if filas == 1:
         print("Asignación guardada.")
     else:
         print("Consulta nuevamente para comprobar el resultado.")
 
 
-# Paso 8
-def mostrar_departamento():
+def mostrar_departamento(usuario):
+    exigir_admin(usuario)   # primera instrucción de una acción administrativa
     id_dep = solicitar_id("ID del departamento: ")
-    departamento = DepartamentoDAO.buscar_con_empleados(id_dep)
+    departamento = servicio.consultar_departamento(usuario, id_dep)
     if departamento is None:
         print("No existe ese departamento.")
         return
@@ -95,50 +171,76 @@ def mostrar_departamento():
         print(f"{empleado.id}: {empleado.nombre}")
 
 
-# Paso 10: polimorfismo
+# ---------- reportes: polimorfismo ----------
 def imprimir_reportes(empleados, departamento):
     reportes = [
         ReporteEmpleados(empleados),
         ReportePorDepartamento(departamento),
     ]
     for reporte in reportes:
-        print(reporte.generar())
+        print(reporte.generar())     # misma llamada, cada objeto responde a su manera
         print()
 
 
-def mostrar_reportes():
+def mostrar_reportes(usuario):
+    exigir_admin(usuario)   # primera instrucción de una acción administrativa
     id_dep = solicitar_id("ID del departamento para el reporte: ")
-    departamento = DepartamentoDAO.buscar_con_empleados(id_dep)
+    empleados, departamento = servicio.datos_para_reportes(usuario, id_dep)
     if departamento is None:
         print("No existe ese departamento.")
         return
-    empleados = EmpleadoDAO.listar()
     imprimir_reportes(empleados, departamento)
 
 
-def menu_empleados():
+# ---------- opciones para cualquier sesión ----------
+def mi_ficha(usuario):
+    empleado = servicio.consultar_mi_ficha(usuario)
+    if empleado is None:
+        print("No se encontró tu ficha de empleado.")
+    else:
+        mostrar_empleado(empleado)
+
+
+def abrir_indicadores(usuario):
+    menu_indicadores(usuario)
+
+
+# ---------- menú principal según el tipo de usuario ----------
+OPCIONES = {
+    "1": ("Registrar empleado", crear_empleado),
+    "2": ("Listar empleados", listar_empleados),
+    "3": ("Buscar empleado por ID", buscar_empleado),
+    "4": ("Actualizar correo de un empleado", actualizar_empleado),
+    "5": ("Eliminar empleado", eliminar_empleado),
+    "6": ("Asignar departamento a un empleado", asignar_departamento),
+    "7": ("Mostrar reportes", mostrar_reportes),
+    "8": ("Consultar departamento con sus empleados", mostrar_departamento),
+    "9": ("Crear departamento", crear_departamento),
+    "10": ("Crear cuenta de usuario", crear_cuenta),
+    "11": ("Indicadores (UF / dólar)", abrir_indicadores),
+    "12": ("Mi ficha", mi_ficha),
+}
+OPCIONES_EMPLEADO = ("11", "12")
+
+
+def opciones_visibles(usuario):
+    if getattr(usuario, "rol", None) == "admin":
+        return list(OPCIONES)
+    return list(OPCIONES_EMPLEADO)
+
+
+def menu_empleados(usuario):
     while True:
-        print("\n1. Registrar empleado")
-        print("2. Listar empleados")
-        print("3. Crear departamento")
-        print("4. Asignar departamento a empleado")
-        print("5. Mostrar departamento con sus empleados")
-        print("6. Reportes")
-        print("0. Salir")
+        print(f"\n=== EcoTech · {usuario.nombre_usuario} ({usuario.rol}) ===")
+        for numero in opciones_visibles(usuario):
+            print(f"{numero}. {OPCIONES[numero][0]}")
+        print("0. Cerrar sesión")
         opcion = input("Opción: ").strip()
-        if opcion == "1":
-            crear_empleado()
-        elif opcion == "2":
-            listar_empleados()
-        elif opcion == "3":
-            crear_departamento()
-        elif opcion == "4":
-            asignar_departamento()
-        elif opcion == "5":
-            mostrar_departamento()
-        elif opcion == "6":
-            mostrar_reportes()
-        elif opcion == "0":
+        if opcion == "0":
             break
+        if opcion in OPCIONES:
+            # Ocultar una opción no basta: si un empleado escribe "5", el SERVICIO
+            # la rechaza con PermissionError antes de tocar la BD.
+            ejecutar_seguro(OPCIONES[opcion][1], usuario)
         else:
             print("Elige una opción del menú.")

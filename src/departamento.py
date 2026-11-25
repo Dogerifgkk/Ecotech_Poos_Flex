@@ -8,10 +8,26 @@ class Departamento:
 
     def __init__(self, nombre, descripcion="", id=None):
         self.id = id
-        self.nombre = nombre
+        self.nombre = nombre            # pasa por el setter (valida)
         self.descripcion = descripcion
         self._empleados = []            # lista interna (privada)
         self.gerente = None
+
+    @property
+    def nombre(self):
+        return self._nombre
+
+    @nombre.setter
+    def nombre(self, valor):
+        if not isinstance(valor, str):
+            raise ValueError("El nombre del departamento debe ser texto.")
+        valor = " ".join(valor.split())
+        if not (self.MIN_NOMBRE <= len(valor) <= self.MAX_NOMBRE):
+            raise ValueError(
+                f"El nombre del departamento debe tener entre {self.MIN_NOMBRE} "
+                f"y {self.MAX_NOMBRE} caracteres."
+            )
+        self._nombre = valor
 
     @property
     def empleados(self):
