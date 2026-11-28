@@ -275,6 +275,24 @@ class TestIndicadores(Base):
             with self.assertRaises(ValueError):
                 api_indicadores.extraer_primero(malo, "uf")
 
+    def test_extraer_primero_otros_formatos(self):
+        """El adaptador tolera envoltorios distintos de la API real."""
+        obs = {"date": "2026-01-05T03:00:00.000Z", "value": 40000.5}
+        formatos = [
+            {"status": "success", "data": {"code": "uf", "series": [obs]}},
+            {"status": "success", "data": [{"code": "dolar", "value": 900.0, "date": "2026-01-05"},
+                                           {"code": "uf", "series": [obs]}]},
+            {"uf": {"code": "uf", "series": [obs]}, "dolar": {"code": "dolar", "series": [obs]}},
+            {"data": {"code": "uf", "value": 40000.5, "date": "2026-01-05"}},
+        ]
+        for datos in formatos:
+            i = api_indicadores.extraer_primero(datos, "uf")
+            self.assertEqual((i.codigo, i.fecha), ("uf", "2026-01-05"))
+        with self.assertRaises(ValueError):
+            api_indicadores.extraer_primero({"data": [{"code": "dolar", "value": 1, "date": "2026-01-05"}]}, "uf")
+        with self.assertRaises(ValueError):
+            api_indicadores.extraer_primero("texto", "uf")
+
     def test_empleado_no_actualiza(self):
         with mock.patch("requests.get") as get:
             with self.assertRaises(PermissionError):

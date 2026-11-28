@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# EcoTech: base de datos local y registros (se regeneran con main.py)
+*.db
+*.sqlite3
+ecotech.log

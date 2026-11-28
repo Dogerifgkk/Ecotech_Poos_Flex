@@ -67,7 +67,7 @@ py persistencia/crear_bd.py          # solo tablas
 ```
 
 La semilla inserta únicamente lo que falta, así que se puede ejecutar muchas veces sin duplicar datos.
-Para partir desde cero, borra `src/ecotech.db`.
+Para partir desde cero, borra `src/ecotech.db` (no se sube a GitHub: `*.db` está en `.gitignore`).
 
 ## Ejecución
 
@@ -117,6 +117,12 @@ py -m unittest test_ecotech -v
 
 Matriz de pruebas con resultados esperados y observados, y problemas pendientes:
 [`Docs/matriz_pruebas.md`](Docs/matriz_pruebas.md).
+
+## Documentación
+
+- [`Docs/diagrama_clases.md`](Docs/diagrama_clases.md) y `Docs/diagrama_clases.png`: diagrama de clases que coincide con el código.
+- [`Docs/uso_ia.md`](Docs/uso_ia.md): bitácora del uso de IA y criterios de seguridad aplicados.
+- [`Docs/matriz_pruebas.md`](Docs/matriz_pruebas.md): pruebas realizadas y problemas pendientes.
 
 ## Git
 

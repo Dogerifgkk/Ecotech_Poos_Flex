@@ -29,8 +29,8 @@ def solicitar_login():
 
 
 def crear_cuenta(usuario_actual):
-    exigir_admin(usuario_actual)   # primera instrucción de una acción administrativa
     """Opción administrativa: crea la cuenta de un empleado existente."""
+    exigir_admin(usuario_actual)   # primera instrucción de una acción administrativa
     empleado = buscar_empleado(usuario_actual, solicitar_id("ID del empleado para la cuenta: "))
     if empleado is None:
         print("No existe un empleado con ese ID.")

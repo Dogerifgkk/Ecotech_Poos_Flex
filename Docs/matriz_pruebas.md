@@ -1,10 +1,10 @@
 # Matriz de pruebas · EcoTech
 
-**Cómo se probó.** Las pruebas automáticas (`py -m unittest test_ecotech -v`, 29 casos) se ejecutaron
+**Cómo se probó.** Las pruebas automáticas (`py -m unittest test_ecotech -v`, 30 casos) se ejecutaron
 con SQLite temporal y la API simulada. Además se hizo un recorrido manual de `main.py` con entrada
 por consola. La API real y MySQL **no** se probaron (ver "Pendientes").
 
-Resultado de la última ejecución automática: **29 pruebas, todas OK**.
+Resultado de la última ejecución automática: **30 pruebas, todas OK**.
 
 | # | Caso | Resultado esperado | Resultado observado |
 |---|---|---|---|
@@ -34,7 +34,8 @@ Resultado de la última ejecución automática: **29 pruebas, todas OK**.
 | 24 | Mismo código y fecha guardados dos veces | Una sola fila | OK |
 | 25 | Mismo código y fecha con otro valor | Sigue una fila; se actualiza el valor (política elegida) | OK |
 | 26 | Migración: tabla `usuario` antigua sin `rol` | Se agrega la columna `rol` | OK |
-| 27 | Actualizar UF contra la API real | Dato guardado y mostrado | **Pendiente** (no verificada) |
+| 27 | Actualizar UF contra la API real | Dato guardado y mostrado | **COMPLETAR al probar en tu equipo** (si dice "respaldo" con Internet, revisar el formato JSON) |
+| 30 | JSON de la API con distintos envoltorios (`data`, lista, plano) | `extraer_primero` devuelve el `Indicador` correcto o falla con ValueError | OK (prueba automática) |
 | 28 | Todo el recorrido con MySQL | Mismos resultados que SQLite | **Pendiente** (no probado) |
 | 29 | Reiniciar el programa y consultar (en tu equipo) | La relación y la cuenta reaparecen desde la BD | **Completar al probar** |
 
